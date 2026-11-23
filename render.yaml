@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: toolpotro-creators-network
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    healthCheckPath: /api/ping
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: toolpotro-creators-network
+      - key: APP_URL
+        value: https://creators.toolpotro.com

@@ -1,0 +1,307 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Creator or Admin user profile with wallet and earnings stats",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "User UID from Firebase Auth"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Creator full name or channel name"
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Avatar photo URL"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["creator", "admin"],
+          "description": "User role in the network"
+        },
+        "walletProvider": {
+          "type": "string",
+          "enum": ["bKash", "Nagad", ""],
+          "description": "Selected mobile financial service"
+        },
+        "walletNumber": {
+          "type": "string",
+          "maxLength": 15,
+          "description": "Bangladeshi wallet phone number (e.g. 01700000000)"
+        },
+        "availableBalance": {
+          "type": "number",
+          "description": "Current withdrawable balance in BDT"
+        },
+        "pendingBalance": {
+          "type": "number",
+          "description": "Earnings pending manual or high-value approval"
+        },
+        "totalEarned": {
+          "type": "number",
+          "description": "Lifetime total earnings in BDT"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Timestamp ISO string of profile creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Timestamp ISO string of last profile update"
+        }
+      },
+      "required": ["id", "email", "role", "availableBalance", "pendingBalance", "totalEarned"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Designated administrative user with system privileges",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Admin UID"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Admin email"
+        },
+        "addedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp"
+        }
+      },
+      "required": ["id", "email"]
+    },
+    "Campaign": {
+      "title": "Campaign",
+      "description": "Promotional campaign specifications, CPM rate card, and per-platform verification rules",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Unique campaign identifier"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Campaign title"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 4000,
+          "description": "Campaign guidelines and briefs for creators"
+        },
+        "commonGuideline": {
+          "type": "string",
+          "maxLength": 4000,
+          "description": "Condition 1: Global Video Creation Guideline common for all platforms"
+        },
+        "platformGuidelines": {
+          "type": "object",
+          "description": "Platform-specific guidelines for YouTube, Facebook, Instagram, and TikTok"
+        },
+        "brandName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Target brand name"
+        },
+        "brandKeywords": {
+          "type": "array",
+          "description": "Required brand keywords list"
+        },
+        "hashtags": {
+          "type": "array",
+          "description": "Admin-saved hashtags archive"
+        },
+        "requiredDialogues": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Mandatory spoken audio dialogue and timing rule"
+        },
+        "cpmRate": {
+          "type": "number",
+          "description": "Rate card in BDT per 1000 views"
+        },
+        "validationMode": {
+          "type": "string",
+          "enum": ["first_30s", "full_script"],
+          "description": "Audio extraction validation rule"
+        },
+        "minViews": {
+          "type": "number",
+          "description": "Minimum view threshold"
+        },
+        "minLikeRatio": {
+          "type": "number",
+          "description": "Minimum like-to-view ratio"
+        },
+        "minCommentRatio": {
+          "type": "number",
+          "description": "Minimum comment-to-view ratio"
+        },
+        "maxPayoutPerVideo": {
+          "type": "number",
+          "description": "Maximum reward cap per single submission in BDT"
+        },
+        "endDate": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Campaign end date string"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Campaign category"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether campaign is accepting submissions"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "paused", "completed"],
+          "description": "Campaign lifecycle status"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp"
+        },
+        "createdBy": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Admin user email or UID who created the campaign"
+        }
+      },
+      "required": ["id", "title", "brandName", "cpmRate", "validationMode", "minViews", "status"]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "Creator video link submission with automated AI verification, manual fallback queue, and payout ledger state",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Unique submission ID"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Creator user UID"
+        },
+        "userEmail": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Creator email"
+        },
+        "userName": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Creator display name"
+        },
+        "campaignId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Associated campaign ID"
+        },
+        "campaignTitle": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Associated campaign title"
+        },
+        "originalUrl": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Submitted raw video URL"
+        },
+        "normalizedUrl": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Normalized and deduplicated video URL"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["youtube_shorts", "facebook_reels", "tiktok", "instagram"],
+          "description": "Video social media platform"
+        },
+        "videoId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Extracted video ID from URL"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "processing",
+            "approved",
+            "rejected",
+            "needs_manual_review",
+            "high_value_pending",
+            "appeal_pending",
+            "permanently_rejected"
+          ],
+          "description": "Current pipeline status"
+        },
+        "views": { "type": "number" },
+        "likes": { "type": "number" },
+        "comments": { "type": "number" },
+        "likeRatio": { "type": "number" },
+        "commentRatio": { "type": "number" },
+        "brandMentioned": { "type": "boolean" },
+        "mentionTimestamp": { "type": "string", "maxLength": 32 },
+        "geminiConfidence": { "type": "number" },
+        "penaltyPercentage": { "type": "number" },
+        "calculatedPayout": { "type": "number" },
+        "finalPayout": { "type": "number" },
+        "payoutCredited": { "type": "boolean" },
+        "aiFallbackReason": { "type": "string", "maxLength": 100 },
+        "aiErrorDetail": { "type": "string", "maxLength": 1000 },
+        "rejectionReason": { "type": "string", "maxLength": 1000 },
+        "reviewNotes": { "type": "string", "maxLength": 2000 },
+        "appealReason": { "type": "string", "maxLength": 1000 },
+        "appealSubmittedAt": { "type": "string", "maxLength": 64 },
+        "audioRuleUsed": { "type": "string", "enum": ["first_30s", "full_script"] },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "campaignId", "originalUrl", "normalizedUrl", "platform", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user creator profiles and balances"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Collection of authorized admin users"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": "Campaign",
+      "description": "Collection of active and past marketing campaigns"
+    },
+    "/submissions/{submissionId}": {
+      "schema": "Submission",
+      "description": "Collection of video link submissions, AI fallback queue, and audit logs"
+    }
+  }
+}

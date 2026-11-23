@@ -1,0 +1,6 @@
+{
+  "name": "Toolpotro Creators Network",
+  "description": "Automated, cost-optimized, and fraud-proof UGC creator promotional platform with Gemini AI audio verification, dynamic campaign rules, and mobile-first wallet payouts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

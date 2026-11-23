@@ -1,0 +1,176 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net - Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && isEmailVerified() && request.auth.token.email == 'anglaranni66@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 150 &&
+             data.role in ['creator', 'admin'] &&
+             data.availableBalance is number && data.availableBalance >= 0 &&
+             data.pendingBalance is number && data.pendingBalance >= 0 &&
+             data.totalEarned is number && data.totalEarned >= 0 &&
+             (!('walletProvider' in data) || data.walletProvider in ['bKash', 'Nagad', '']) &&
+             (!('walletNumber' in data) || (data.walletNumber is string && data.walletNumber.size() <= 15)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120));
+    }
+
+    // Campaign Validation
+    function isValidCampaign(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.brandName is string && data.brandName.size() > 0 && data.brandName.size() <= 100 &&
+             data.cpmRate is number && data.cpmRate >= 1 &&
+             data.validationMode in ['first_30s', 'full_script'] &&
+             data.minViews is number && data.minViews >= 0 &&
+             data.status in ['active', 'paused', 'completed'];
+    }
+
+    // Submission Validation
+    function isValidSubmission(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.campaignId is string && data.campaignId.size() > 0 && data.campaignId.size() <= 128 &&
+             data.originalUrl is string && data.originalUrl.size() > 0 && data.originalUrl.size() <= 1000 &&
+             data.normalizedUrl is string && data.normalizedUrl.size() > 0 && data.normalizedUrl.size() <= 1000 &&
+             data.platform in ['youtube_shorts', 'facebook_reels', 'tiktok', 'instagram'] &&
+             data.status in [
+               'pending',
+               'processing',
+               'approved',
+               'rejected',
+               'needs_manual_review',
+               'high_value_pending',
+               'appeal_pending',
+               'permanently_rejected'
+             ] &&
+             (!('appealReason' in data) || (data.appealReason is string && data.appealReason.size() <= 1000));
+    }
+
+    // /users/{userId} collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      // Creators can register their profile with zero balances
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       isEmailVerified() &&
+                       isValidUser(incoming()) &&
+                       incoming().id == userId &&
+                       incoming().role == 'creator' &&
+                       incoming().availableBalance == 0 &&
+                       incoming().pendingBalance == 0 &&
+                       incoming().totalEarned == 0;
+
+      // Creator can only update wallet info and display details, NOT balances or role
+      allow update: if isValidId(userId) && (
+        (isAdmin() && isValidUser(incoming())) ||
+        (
+          isOwner(userId) &&
+          isEmailVerified() &&
+          isValidUser(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().email == existing().email &&
+          incoming().role == existing().role &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().availableBalance == existing().availableBalance &&
+          incoming().pendingBalance == existing().pendingBalance &&
+          incoming().totalEarned == existing().totalEarned &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['walletProvider', 'walletNumber', 'displayName', 'photoURL', 'updatedAt'])
+        )
+      );
+
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // /admins/{adminId} collection
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list: if isAdmin();
+      allow write: if isValidId(adminId) && isAdmin();
+    }
+
+    // /campaigns/{campaignId} collection
+    match /campaigns/{campaignId} {
+      allow get: if isValidId(campaignId) && isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update: if isValidId(campaignId) && isAdmin() && isValidCampaign(incoming());
+      allow delete: if isValidId(campaignId) && isAdmin();
+    }
+
+    // /submissions/{submissionId} collection
+    match /submissions/{submissionId} {
+      allow get: if isValidId(submissionId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Creator can submit links cleanly with pending/processing initial state and zero payout
+      allow create: if isValidId(submissionId) &&
+                       isSignedIn() &&
+                       isEmailVerified() &&
+                       isValidSubmission(incoming()) &&
+                       incoming().id == submissionId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status in ['pending', 'processing'] &&
+                       (!('finalPayout' in incoming()) || incoming().finalPayout == 0) &&
+                       (!('payoutCredited' in incoming()) || incoming().payoutCredited == false) &&
+                       exists(/databases/$(database)/documents/campaigns/$(incoming().campaignId));
+
+      // Admin can update review status/payout; Creator can only submit appeal from rejected state
+      allow update: if isValidId(submissionId) && isValidSubmission(incoming()) && (
+        isAdmin() ||
+        (
+          isOwner(existing().userId) &&
+          isEmailVerified() &&
+          incoming().userId == existing().userId &&
+          incoming().campaignId == existing().campaignId &&
+          incoming().normalizedUrl == existing().normalizedUrl &&
+          incoming().createdAt == existing().createdAt &&
+          existing().status == 'rejected' &&
+          incoming().status == 'appeal_pending' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'appealReason', 'appealSubmittedAt', 'updatedAt'])
+        )
+      );
+
+      allow delete: if isValidId(submissionId) && isAdmin();
+    }
+  }
+}
