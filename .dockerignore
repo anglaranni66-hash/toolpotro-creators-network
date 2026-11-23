@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+.data
+.git
+.env
+.env.*
+!.env.example
+.aistudio
