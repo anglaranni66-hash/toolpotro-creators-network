@@ -28,6 +28,7 @@ const __dirname = path.dirname(__filename);
 loadPersistentStore();
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '5mb' }));

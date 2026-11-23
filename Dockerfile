@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Copy package manifest (package-lock.json optional) and install dependencies
 COPY package*.json ./
-RUN npm install --no-audit --no-fund
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 COPY . .
 RUN npm run build
